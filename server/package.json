@@ -1,0 +1,23 @@
+{
+  "name": "codinggod-server",
+  "version": "1.0.0",
+  "description": "Server-side code for CodingGod.",
+  "homepage": "https://github.com/RUN1-CS/CodingGod#readme",
+  "bugs": {
+    "url": "https://github.com/RUN1-CS/CodingGod/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RUN1-CS/CodingGod.git"
+  },
+  "license": "GPL-3.0",
+  "author": "RUN1-CS",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "ws": "^8.19.0"
+  }
+}

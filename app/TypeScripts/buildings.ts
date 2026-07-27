@@ -1,4 +1,4 @@
-import { buyBuilding, mpop, reducePopulation } from "./economy.js";
+import { buyBuilding, mpop, populationData } from "./economy.js";
 import { buildingData, Building } from "./classes.js";
 
 import { priceTag } from "./game.js";
@@ -23,7 +23,7 @@ bg.height =
 export let blockSize = 50;
 
 const BuildingImgs = document.getElementsByClassName(
-  "build-img"
+  "build-img",
 ) as HTMLCollectionOf<HTMLImageElement>;
 for (let buildingImg of BuildingImgs) {
   buildingImg.style.display = "none";
@@ -76,21 +76,21 @@ export let buildings = {
     3,
     { width: 3 * blockSize, height: 3 * blockSize },
     2,
-    { coal: 2, iron: 1 }
+    { coal: 2, iron: 1 },
   ),
   shop: new buildingData(
     buildingTypes.SHOP,
     0,
     2,
     { width: 2 * blockSize, height: 2 * blockSize },
-    2
+    2,
   ),
   farm: new buildingData(
     buildingTypes.FARM,
     0,
     2,
     { width: 4 * blockSize, height: 4 * blockSize },
-    5
+    5,
   ),
   path: new buildingData(buildingTypes.PATH, 0, 1, {
     width: 1 * blockSize,
@@ -101,14 +101,14 @@ export let buildings = {
     0,
     3,
     { width: 3 * blockSize, height: 3 * blockSize },
-    3
+    3,
   ),
   mason: new buildingData(
     buildingTypes.MASON,
     0,
     2,
     { width: 2 * blockSize, height: 2 * blockSize },
-    4
+    4,
   ),
 };
 
@@ -169,7 +169,7 @@ export function updatePrices(
   houses: number,
   farms: number,
   mines: number,
-  masons: number
+  masons: number,
 ) {
   buildings.house.price =
     Math.floor(100 * Math.pow(buildings.house.koeficient, houses)) - 100;
@@ -218,7 +218,7 @@ function renderPreBuild(preBuild: preBuildMark, color: string = "#0000FF") {
     preBuild.snap.x,
     preBuild.snap.y,
     preBuild.size.width,
-    preBuild.size.height
+    preBuild.size.height,
   );
   const sx = Math.max(0, preBuild.snap.x);
   const sy = Math.max(0, preBuild.snap.y);
@@ -254,7 +254,7 @@ export function checkBuildingPosition(type: buildingTypes): boolean | null {
       preBuild.snap.x,
       preBuild.snap.y,
       preBuild.size.width,
-      preBuild.size.height
+      preBuild.size.height,
     );
   }
 
@@ -338,7 +338,7 @@ export function placeBuilding(type: buildingTypes): boolean {
   if (status == null) return false;
   if (!buyBuilding(getBuildingData(type))) return false;
   if (!status) {
-    let newBuilding = new Building(type, preBuild.snap);
+    let newBuilding = new Building(type, preBuild.snap, populationData);
     placedBuildings.push(newBuilding);
     renderBuildings();
     return true;
@@ -379,7 +379,9 @@ export function removeBuildingAtPosition(position: position) {
       }
     }
     if (building.data.type === buildingTypes.HOUSE) {
-      reducePopulation(building.householdMembers?.length ?? 0);
+      for (let member of building.householdMembers ?? []) {
+        member.die(populationData, placedBuildings);
+      }
     }
     bgCtx.clearRect(0, 0, bg.width, bg.height);
     renderBuildings();

@@ -1,10 +1,4 @@
-import {
-  playerStats,
-  populationData,
-  demands,
-  incomeHistory,
-  resources,
-} from "./economy.js";
+import { player, populationData } from "./economy.js";
 import { mpop, citizens } from "./economy.js";
 import { placedBuildings } from "./buildings.js";
 import { loadJSON } from "./game.js";
@@ -13,11 +7,8 @@ function saveJSON(saveSlot: number) {
   const data = {
     buildings: placedBuildings,
     citizens: citizens,
-    playerStats: playerStats,
+    player: player,
     populationData: populationData,
-    demands: demands,
-    incomeHistory: incomeHistory,
-    resources: resources,
   };
   localStorage.setItem(`saveSlot${saveSlot}`, JSON.stringify(data));
 }
@@ -31,7 +22,7 @@ function getSlotData(saveSlot: number) {
 }
 
 const saveLoadButton = document.getElementById(
-  "save/load"
+  "save/load",
 ) as HTMLButtonElement;
 saveLoadButton.addEventListener("click", () => {
   const saveSlots = `

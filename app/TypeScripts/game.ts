@@ -1,10 +1,4 @@
-import {
-  process,
-  mpop,
-  mpopClose,
-  citizens,
-  ecoAssignValues,
-} from "./economy.js";
+import { process, mpop, mpopClose, citizens } from "./economy.js";
 import {
   buildingInProgress,
   checkBuildingPosition,
@@ -87,13 +81,13 @@ function UpdateGame(timeStamp: number) {
       placedBuildings.filter((b) => b.data.type === buildingTypes.HOUSE).length,
       placedBuildings.filter((b) => b.data.type === buildingTypes.FARM).length,
       placedBuildings.filter((b) => b.data.type === buildingTypes.MINES).length,
-      placedBuildings.filter((b) => b.data.type === buildingTypes.MASON).length
+      placedBuildings.filter((b) => b.data.type === buildingTypes.MASON).length,
     );
   }
   populationSpan.innerText = `Population: ${citizens.length}`;
   if (frame == 3000)
     mpop(
-      'Thx for playing Coding God! Please consider supporting me on Pateron <br> <a href="https://patreon.com/RUN1_IT"><img src="https://c5.patreon.com/external/favicon/rebrand/pwa-192.png" alt="Patreon" height="16" width="16">Support Me!</a>'
+      'Thx for playing Coding God! Please consider supporting me on Pateron <br> <a href="https://patreon.com/RUN1_IT"><img src="https://c5.patreon.com/external/favicon/rebrand/pwa-192.png" alt="Patreon" height="16" width="16">Support Me!</a>',
     );
   requestAnimationFrame(UpdateGame);
 }
@@ -118,7 +112,7 @@ function contruction(type: buildingTypes) {
  *---------------------------------------------------------------------------*/
 
 const buildButtons = document.querySelectorAll(
-  ".build"
+  ".build",
 ) as NodeListOf<HTMLButtonElement>;
 const modal = document.querySelector(".modal") as HTMLDivElement;
 buildButtons.forEach((button) => {
@@ -214,13 +208,6 @@ export function loadJSON(saveSlot: number) {
     data.buildings.forEach((b: any) => placedBuildings.push(b));
     citizens.length = 0;
     data.citizens.forEach((c: any) => citizens.push(c));
-    ecoAssignValues(
-      data.playerStats,
-      data.populationData,
-      data.demands,
-      data.incomeHistory,
-      data.resources
-    );
     buildAssignValues(data.buildings);
   }
 }
