@@ -1,12 +1,12 @@
 import { player, populationData } from "./economy.js";
-import { mpop, citizens } from "./economy.js";
+import { mpop } from "./economy.js";
 import { placedBuildings } from "./buildings.js";
 import { loadJSON } from "./game.js";
 
 function saveJSON(saveSlot: number) {
   const data = {
     buildings: placedBuildings,
-    citizens: citizens,
+    citizens: populationData.population,
     player: player,
     populationData: populationData,
   };

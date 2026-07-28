@@ -20,6 +20,9 @@ RUN docker-php-ext-install pdo pdo_pgsql
 # Copy application source
 COPY ./ /var/www/html/
 
+# Ensure Apache can read static assets and application files
+RUN chown -R www-data:www-data /var/www/html && find /var/www/html -type d -exec chmod 755 {} \; && find /var/www/html -type f -exec chmod 644 {} \;
+
 # Build client-side code
 RUN npm install -g typescript && tsc --build
 

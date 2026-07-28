@@ -54,72 +54,69 @@ addEventListener("mousemove", function (event) {
   mouse = { x: mouseX, y: mouseY };
 });
 
-//Building types
-export enum buildingTypes {
-  HOUSE,
-  FOUNDRY,
-  SHOP,
-  FARM,
-  PATH,
-  MINES,
-  MASON,
-}
-
-export let buildings = {
-  house: new buildingData(buildingTypes.HOUSE, 0, 1.5, {
+export let buildings: { [key: string]: buildingData } = {
+  house: new buildingData(
+    "house",
+    0,
+    1.5,
+    {
+      width: 2 * blockSize,
+      height: 2 * blockSize,
+    },
+    {},
+    { food: 1 },
+  ),
+  foundry: new buildingData(
+    "foundry",
+    0,
+    3,
+    {
+      width: 3 * blockSize,
+      height: 3 * blockSize,
+    },
+    { steel: 1 },
+    { coal: 1, iron: 1 },
+  ),
+  shop: new buildingData("shop", 0, 2, {
     width: 2 * blockSize,
     height: 2 * blockSize,
   }),
-  foundry: new buildingData(
-    buildingTypes.FOUNDRY,
-    0,
-    3,
-    { width: 3 * blockSize, height: 3 * blockSize },
-    2,
-    { coal: 2, iron: 1 },
-  ),
-  shop: new buildingData(
-    buildingTypes.SHOP,
-    0,
-    2,
-    { width: 2 * blockSize, height: 2 * blockSize },
-    2,
-  ),
   farm: new buildingData(
-    buildingTypes.FARM,
+    "farm",
     0,
     2,
     { width: 4 * blockSize, height: 4 * blockSize },
-    5,
+    { food: 10 },
   ),
-  path: new buildingData(buildingTypes.PATH, 0, 1, {
+  path: new buildingData("path", 0, 1, {
     width: 1 * blockSize,
     height: 1 * blockSize,
   }),
   mines: new buildingData(
-    buildingTypes.MINES,
+    "mines",
     0,
     3,
     { width: 3 * blockSize, height: 3 * blockSize },
-    3,
+    { coal: 1, iron: 1 },
   ),
   mason: new buildingData(
-    buildingTypes.MASON,
+    "mason",
     0,
     2,
     { width: 2 * blockSize, height: 2 * blockSize },
-    4,
+    { stoneBricks: 1 },
+    { stone: 1 },
   ),
 };
 
-export function getBuildingData(type: buildingTypes): buildingData {
+export function getBuildingData(type: string): buildingData {
   for (let building of Object.values(buildings)) {
     if (building.type === type) {
       return building;
     }
   }
   return {
-    type: buildingTypes.PATH,
+    type: "path",
     price: 0,
     koeficient: 1,
     size: { width: blockSize, height: blockSize },
@@ -127,10 +124,10 @@ export function getBuildingData(type: buildingTypes): buildingData {
 }
 
 export let productionAmplifiers = {
-  mines: 1,
-  foundries: 1,
-  farms: 1,
-  masons: 1,
+  ["mines"]: 1,
+  ["foundry"]: 1,
+  ["farm"]: 1,
+  ["mason"]: 1,
 };
 
 interface size {
@@ -144,7 +141,7 @@ export interface position {
 }
 
 interface preBuildMark {
-  type: buildingTypes;
+  type: string;
   size: size;
   position: position;
   snap: position;
@@ -163,26 +160,55 @@ export const grid: (Building | null)[][] = [];
 for (let y = 0; y < gridHeight; y++) {
   grid[y] = new Array(gridWidth).fill(null);
 }
-export function updatePrices(
-  foundries: number,
-  shops: number,
-  houses: number,
-  farms: number,
-  mines: number,
-  masons: number,
-) {
-  buildings.house.price =
-    Math.floor(100 * Math.pow(buildings.house.koeficient, houses)) - 100;
-  buildings.foundry.price =
-    Math.floor(500 * Math.pow(buildings.foundry.koeficient, foundries)) - 500;
-  buildings.shop.price =
-    Math.floor(300 * Math.pow(buildings.shop.koeficient, shops)) - 300;
-  buildings.farm.price =
-    Math.floor(400 * Math.pow(buildings.farm.koeficient, farms)) - 400;
-  buildings.mines.price =
-    Math.floor(700 * Math.pow(buildings.mines.koeficient, mines)) - 700;
-  buildings.mason.price =
-    Math.floor(600 * Math.pow(buildings.mason.koeficient, masons)) - 600;
+export function updatePrices() {
+  buildings["house"]!.price =
+    Math.floor(
+      100 *
+        Math.pow(
+          buildings["house"]!.koeficient,
+          placedBuildings.filter((b) => b.data.type === "house").length,
+        ),
+    ) - 100;
+  buildings["foundry"]!.price =
+    Math.floor(
+      500 *
+        Math.pow(
+          buildings["foundry"]!.koeficient,
+          placedBuildings.filter((b) => b.data.type === "foundry").length,
+        ),
+    ) - 500;
+  buildings["shop"]!.price =
+    Math.floor(
+      300 *
+        Math.pow(
+          buildings["shop"]!.koeficient,
+          placedBuildings.filter((b) => b.data.type === "shop").length,
+        ),
+    ) - 300;
+  buildings["farm"]!.price =
+    Math.floor(
+      400 *
+        Math.pow(
+          buildings["farm"]!.koeficient,
+          placedBuildings.filter((b) => b.data.type === "farm").length,
+        ),
+    ) - 400;
+  buildings["mines"]!.price =
+    Math.floor(
+      700 *
+        Math.pow(
+          buildings["mines"]!.koeficient,
+          placedBuildings.filter((b) => b.data.type === "mines").length,
+        ),
+    ) - 700;
+  buildings["mason"]!.price =
+    Math.floor(
+      600 *
+        Math.pow(
+          buildings["mason"]!.koeficient,
+          placedBuildings.filter((b) => b.data.type === "mason").length,
+        ),
+    ) - 600;
 }
 
 export let buildingInProgress = false;
@@ -203,7 +229,7 @@ function snapToGrid(position: position): position {
 }
 
 export let preBuild: preBuildMark = {
-  type: buildingTypes.HOUSE,
+  type: "house",
   position: { x: mouse.x, y: mouse.y },
   size: { width: blockSize, height: blockSize },
   snap: { x: 0, y: 0 },
@@ -240,7 +266,7 @@ function renderPreBuild(preBuild: preBuildMark, color: string = "#0000FF") {
   pbgCtx.restore();
 }
 
-export function checkBuildingPosition(type: buildingTypes): boolean | null {
+export function checkBuildingPosition(type: string): boolean | null {
   let size: size = getBuildingData(type).size;
 
   preBuild.type = type;
@@ -333,7 +359,7 @@ export function checkBuildingPosition(type: buildingTypes): boolean | null {
   return false;
 }
 
-export function placeBuilding(type: buildingTypes): boolean {
+export function placeBuilding(type: string): boolean {
   let status = checkBuildingPosition(type);
   if (status == null) return false;
   if (!buyBuilding(getBuildingData(type))) return false;
@@ -378,7 +404,7 @@ export function removeBuildingAtPosition(position: position) {
         }
       }
     }
-    if (building.data.type === buildingTypes.HOUSE) {
+    if (building.data.type === "house") {
       for (let member of building.householdMembers ?? []) {
         member.die(populationData, placedBuildings);
       }

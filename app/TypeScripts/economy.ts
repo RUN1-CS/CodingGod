@@ -2,13 +2,11 @@ import { /*resumeGame,*/ frame } from "./game.js";
 
 import {
   updatePrices,
-  buildings,
   placedBuildings,
-  buildingTypes,
   productionAmplifiers,
 } from "./buildings.js";
 import type { data } from "./buildings.js";
-import { Building, Citizen, Player, Resource, Population } from "./classes.js";
+import { Player, Population } from "./classes.js";
 
 /*----------------------------------------------------------------------------
  *                                                                           *
@@ -18,7 +16,15 @@ import { Building, Citizen, Player, Resource, Population } from "./classes.js";
 
 export let networth = 0;
 
-export function calculateNetworth() {}
+export function calculateNetworth() {
+  networth = player.finances;
+  placedBuildings.forEach((building) => {
+    networth += building.data.price;
+  });
+  Object.values(player.resources).forEach((resource) => {
+    networth += resource.ammount * resource.price;
+  });
+}
 
 export let shopsOpenned = false;
 
@@ -26,18 +32,21 @@ export const player = new Player();
 
 export const populationData = new Population();
 
-export function process(
-  foundries: number,
-  shops: number,
-  houses: number,
-  farms: number,
-  mines: number,
-  masons: number,
-) {
+export function process() {
   if (frame % 15 === 0) {
     for (const resource of Object.values(player.resources)) {
-      resource.process(player, placedBuildings);
+      resource.process(placedBuildings);
+      resource.priceChange(
+        player,
+        populationData,
+        placedBuildings.filter(
+          (building) => building.data.produces?.[resource.name],
+        ).length,
+      );
     }
+
+    player.finances += populationData.taxCollection();
+    player.sell(placedBuildings);
 
     if (frame % 255 === 0) {
       populationData.agePopulation(placedBuildings);
@@ -46,10 +55,8 @@ export function process(
     popupData();
   }
   updateStatsDisplay();
-  updatePrices(foundries, shops, houses, farms, mines, masons);
+  updatePrices();
 }
-
-export let citizens: Citizen[] = [];
 
 export function buyBuilding(data: data): boolean {
   if (player.finances >= data.price) {
@@ -137,16 +144,15 @@ const moneySpan = document.getElementById("money") as HTMLSpanElement;
 const foodSpan = document.getElementById("food") as HTMLSpanElement;
 
 function updateStatsDisplay() {
-  const rawCount = Array.isArray(player.resources)
-    ? player.resources.filter((type: any) => "raw" in type).length
-    : 0;
+  const resources = Object.values(player.resources);
+  const rawCount = resources.filter((type: any) => "raw" in type).length;
   rawSpan.innerText = `Raw: ${rawCount.toFixed(0)}`;
-  const processedCount = Array.isArray(player.resources)
-    ? player.resources.filter((type: any) => "processed" in type).length
-    : 0;
+  const processedCount = resources.filter(
+    (type: any) => "processed" in type,
+  ).length;
   processedSpan.innerText = `Processed: ${processedCount.toFixed(0)}`;
   moneySpan.innerText = `Money: ${player.finances.toFixed(2)}`;
-  foodSpan.innerText = `Food: ${player.resources.food?.ammount.toFixed(0)}`;
+  foodSpan.innerText = `Food: ${player.resources.food!.ammount.toFixed(0)}`;
 }
 
 /*----------------------------------------------------------------------------
@@ -265,11 +271,11 @@ productionTerminalButton.addEventListener("click", () => {
     <h3>Production Terminal</h3>
     <label for="MinAmp" id="MinAmpLabel">Set Mines Production Rate (%): </label>
     <input type="range" id="MinAmp" name="productionRate" min="0" max="200" value="${
-      productionAmplifiers.mines * 100
+      productionAmplifiers["mines"] * 100
     }"><br>
     <label for="FouAmp" id="FouAmpLabel">Set Foundries Production Rate (%): </label>
     <input type="range" id="FouAmp" name="productionRate" min="0" max="200" value="${
-      productionAmplifiers.foundries * 100
+      productionAmplifiers["foundry"] * 100
     }"><br>
     <button id="setProductionRate">Set Rate</button>
     <button id="dumbResources">Dump Resources</button>
@@ -294,9 +300,9 @@ productionTerminalButton.addEventListener("click", () => {
   ) as HTMLButtonElement;
   setButton.addEventListener("click", () => {
     const ParsedMinAmp = parseInt(MinAmp.value);
-    productionAmplifiers.mines = ParsedMinAmp / 100;
+    productionAmplifiers["mines"] = ParsedMinAmp / 100;
     const ParsedFacAmp = parseInt(FauAmp.value);
-    productionAmplifiers.foundries = ParsedFacAmp / 100;
+    productionAmplifiers["foundry"] = ParsedFacAmp / 100;
     mpopClose(document.querySelector(".modal") as HTMLDivElement);
     //resumeGame();
   });

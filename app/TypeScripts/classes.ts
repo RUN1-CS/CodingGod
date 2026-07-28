@@ -1,5 +1,4 @@
 import {
-  buildingTypes,
   getBuildingData,
   blockSize,
   getbuildingImage,
@@ -9,34 +8,34 @@ import {
 } from "./buildings.js";
 import type { position } from "./buildings.js";
 
-import { optimizeUnits } from "./economy.js";
+import { optimizeUnits, shopsOpenned } from "./economy.js";
 
 import { bgCtx, frame } from "./game.js";
 
 export class buildingData {
-  type: buildingTypes;
+  type: string;
   price: number;
   koeficient: number;
   size: {
     width: number;
     height: number;
   };
-  productionSpeed?: number | undefined;
-  requirements?: { [key: string]: number | undefined };
+  produces?: { [key: string]: number } = {};
+  requires?: { [key: string]: number } = {};
   constructor(
-    type: buildingTypes,
+    type: string,
     price: number,
     koeficient: number,
     size: { width: number; height: number },
-    productionSpeed?: number,
-    requirements?: { [key: string]: number },
+    produces?: { [key: string]: number },
+    requires?: { [key: string]: number },
   ) {
     this.type = type;
     this.price = price;
     this.koeficient = koeficient;
     this.size = size;
-    this.productionSpeed = productionSpeed;
-    this.requirements = requirements ?? {};
+    this.produces = produces ?? {};
+    this.requires = requires ?? {};
   }
 }
 
@@ -45,8 +44,7 @@ export class Building {
   position: position;
   householdMembers?: Citizen[] = [];
   maxMembers?: number = 5;
-  prduces?: { [key: string]: number } = {};
-  constructor(type: buildingTypes, position: position, population: Population) {
+  constructor(type: string, position: position, population: Population) {
     this.data = getBuildingData(type);
     this.position = position;
     for (
@@ -66,7 +64,7 @@ export class Building {
         grid[gy][gx] = this;
       }
     }
-    if (type === buildingTypes.HOUSE) {
+    if (type === "house") {
       for (let i = 0; i < Math.floor(Math.random() * 5 + 1); i++) {
         this.householdMembers?.push(population.birth());
       }
@@ -75,7 +73,7 @@ export class Building {
 
   render() {
     bgCtx.drawImage(
-      getbuildingImage(buildingTypes[this.data.type]),
+      getbuildingImage(this.data.type),
       this.position.x,
       this.position.y,
       this.data.size.width,
@@ -138,12 +136,31 @@ export class Player {
       2500,
       "processed",
     ),
-    food: new Resource("food", 5, 0.05, 1, 0, 0.1, 50, 2500, "processed"),
+    food: new Resource("food", 5, 0.05, 1, 0, 0.1, 50, 2500),
   };
   finances: number = 1000;
 
+  constructor() {
+    console.log(this);
+  }
+
   getSupply(resourceName: string): number {
     return this.resources[resourceName]?.demand ?? 0;
+  }
+
+  sell(buildings: Building[]) {
+    const shops = buildings.filter((building) => building.data.type === "shop");
+
+    if (shopsOpenned) {
+      if (this.resources["stoneBricks"]!.ammount > 10 && shops.length > 0) {
+        this.finances += shops.length * 10;
+        this.resources["stoneBricks"]!.ammount -= shops.length * 10;
+      }
+      if (this.resources["steel"]!.ammount > 5 && shops.length > 0) {
+        this.finances += shops.length * 20;
+        this.resources["steel"]!.ammount -= shops.length * 5;
+      }
+    }
   }
 }
 
@@ -203,7 +220,9 @@ export class Population {
   }
 
   birth(): Citizen {
-    return new Citizen(100, 100);
+    const newCitizen = new Citizen(100, 100);
+    this.population.push(newCitizen);
+    return newCitizen;
   }
 }
 
@@ -219,7 +238,6 @@ export class Resource {
   tsat: number;
   type: "raw" | "processed" = "raw";
   demand: number = 0;
-  predecessor?: Resource | undefined;
   constructor(
     name: string,
     price: number,
@@ -230,7 +248,6 @@ export class Resource {
     t0: number,
     tsat: number,
     type: "raw" | "processed" = "raw",
-    predecessor?: Resource,
   ) {
     this.name = name;
     this.price = price;
@@ -241,46 +258,45 @@ export class Resource {
     this.t0 = t0;
     this.tsat = tsat;
     this.type = type;
-    this.predecessor = predecessor;
   }
 
-  getProducers(buildings: Building[]): Building[] {
-    return buildings.filter(
-      (building) => building.prduces?.[this.name] !== undefined,
+  producing(buildings: Building[]): number {
+    const producers = buildings.filter(
+      (building) => building.data.produces?.[this.name],
     );
+    let producing = 0;
+    producers.forEach((producer) => {
+      producing += producer.data.produces?.[this.name] ?? 0;
+    });
+    return producing;
   }
 
-  process(player: Player, buildings: Building[]) {
-    const producingBuildings = new Set<Building>();
-
-    for (let y = 0; y < gridHeight; y++) {
-      for (let x = 0; x < gridWidth; x++) {
-        const building = grid[y]?.[x];
-        if (building instanceof Building && building.prduces?.[this.name]) {
-          producingBuildings.add(building);
-        }
+  consuming(buildings: Building[]): number {
+    const consumers = buildings.filter(
+      (building) => building.data.requires?.[this.name],
+    );
+    let consuming = 0;
+    consumers.forEach((consumer) => {
+      const req = consumer.data.requires?.[this.name] ?? 0;
+      if (consumer.data.type === "house" && consumer.householdMembers) {
+        consuming += req * consumer.householdMembers.length;
+      } else {
+        consuming += req;
       }
-    }
+    });
+    return consuming;
+  }
 
-    const producers = this.getProducers(buildings);
-    const production =
-      producers[0]?.data.productionSpeed ?? 0 * producers.length;
+  process(buildings: Building[]) {
+    const producers = this.producing(buildings);
+    const production = (producers ?? 0) * buildings.length;
 
-    const currentResource = player.resources[this.name];
-    if (currentResource) {
-      currentResource.ammount = production;
-    }
+    this.ammount += production;
 
-    if (this.type === "processed" && this.predecessor) {
-      const predecessorName = this.predecessor.name;
-      const predecessorResource = player.resources[predecessorName];
-      if (predecessorResource) {
-        predecessorResource.ammount = Math.max(
-          0,
-          (predecessorResource.ammount ?? 0) - production,
-        );
-      }
-    }
+    const consumers = this.consuming(buildings);
+    const consumption = (consumers ?? 0) * buildings.length;
+
+    this.ammount -= consumption;
   }
 
   priceChange(

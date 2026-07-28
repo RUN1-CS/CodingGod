@@ -1,10 +1,9 @@
-import { process, mpop, mpopClose, citizens } from "./economy.js";
+import { process, mpop, mpopClose, populationData } from "./economy.js";
 import {
   buildingInProgress,
   checkBuildingPosition,
   preBuild,
   placedBuildings,
-  buildingTypes,
   placeBuilding,
   setBuildingState,
   removeBuildingAtPosition,
@@ -74,17 +73,9 @@ function UpdateGame(timeStamp: number) {
   if (delta >= frameDuration) {
     LFT = timeStamp - (delta % frameDuration);
     Render();
-    process(
-      placedBuildings.filter((b) => b.data.type === buildingTypes.FOUNDRY)
-        .length,
-      placedBuildings.filter((b) => b.data.type === buildingTypes.SHOP).length,
-      placedBuildings.filter((b) => b.data.type === buildingTypes.HOUSE).length,
-      placedBuildings.filter((b) => b.data.type === buildingTypes.FARM).length,
-      placedBuildings.filter((b) => b.data.type === buildingTypes.MINES).length,
-      placedBuildings.filter((b) => b.data.type === buildingTypes.MASON).length,
-    );
+    process();
   }
-  populationSpan.innerText = `Population: ${citizens.length}`;
+  populationSpan.innerText = `Population: ${populationData.population.length}`;
   if (frame == 3000)
     mpop(
       'Thx for playing Coding God! Please consider supporting me on Pateron <br> <a href="https://patreon.com/RUN1_IT"><img src="https://c5.patreon.com/external/favicon/rebrand/pwa-192.png" alt="Patreon" height="16" width="16">Support Me!</a>',
@@ -99,7 +90,7 @@ export function cancelBuilding() {
   setBuildingState(false);
 }
 
-function contruction(type: buildingTypes) {
+function construction(type: string) {
   setBuildingState(true);
   placeBuilding(type);
   mpopClose(modal);
@@ -117,30 +108,7 @@ const buildButtons = document.querySelectorAll(
 const modal = document.querySelector(".modal") as HTMLDivElement;
 buildButtons.forEach((button) => {
   button.addEventListener("click", () => {
-    switch (button.value) {
-      case "house":
-        contruction(buildingTypes.HOUSE);
-        break;
-      case "foundry":
-        contruction(buildingTypes.FOUNDRY);
-        break;
-      case "shop":
-        contruction(buildingTypes.SHOP);
-        break;
-      case "farm":
-        contruction(buildingTypes.FARM);
-        break;
-      case "mines":
-        contruction(buildingTypes.MINES);
-        break;
-      case "path":
-        contruction(buildingTypes.PATH);
-        break;
-      case "mason":
-        contruction(buildingTypes.MASON);
-      default:
-        break;
-    }
+    construction(button.value);
   });
 });
 
@@ -169,7 +137,7 @@ addEventListener("keydown", function (event) {
     if (buildingInProgress) {
       setBuildingState(false);
       placeBuilding(preBuild.type);
-      if (preBuild.type == buildingTypes.PATH) setBuildingState(true);
+      if (preBuild.type == "path") setBuildingState(true);
       pbgCtx.clearRect(0, 0, pbg.width, pbg.height);
     }
     priceTag.innerText = ``;
@@ -206,8 +174,8 @@ export function loadJSON(saveSlot: number) {
     const data = JSON.parse(dataStr);
     placedBuildings.length = 0;
     data.buildings.forEach((b: any) => placedBuildings.push(b));
-    citizens.length = 0;
-    data.citizens.forEach((c: any) => citizens.push(c));
+    populationData.population.length = 0;
+    data.citizens.forEach((c: any) => populationData.population.push(c));
     buildAssignValues(data.buildings);
   }
 }
