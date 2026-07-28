@@ -3,6 +3,8 @@ import { buildingData, Building } from "./classes.js";
 
 import { priceTag } from "./game.js";
 
+import type { preBuildMark, position } from "./types.js";
+
 const fg = document.getElementById("fg") as HTMLCanvasElement;
 const pbg = document.getElementById("pbg") as HTMLCanvasElement;
 const bg = document.getElementById("bg") as HTMLCanvasElement;
@@ -22,25 +24,13 @@ bg.height =
 
 export let blockSize = 50;
 
-const BuildingImgs = document.getElementsByClassName(
+export const BuildingImgs = document.getElementsByClassName(
   "build-img",
 ) as HTMLCollectionOf<HTMLImageElement>;
 for (let buildingImg of BuildingImgs) {
   buildingImg.style.display = "none";
   buildingImg.style.width = `${blockSize}px`;
   buildingImg.style.height = `${blockSize}px`;
-}
-
-export function getbuildingImage(id: string): HTMLImageElement {
-  const rid = id.toLocaleLowerCase();
-  for (let buildingImg of BuildingImgs) {
-    if (buildingImg.id === rid) {
-      return buildingImg;
-    } else {
-      continue;
-    }
-  }
-  throw new Error(`Building image with id ${rid} not found`);
 }
 
 let mouse = { x: 0, y: 0 };
@@ -54,7 +44,7 @@ addEventListener("mousemove", function (event) {
   mouse = { x: mouseX, y: mouseY };
 });
 
-export let buildings: { [key: string]: buildingData } = {
+export const buildingDefinitions: { [key: string]: buildingData } = {
   house: new buildingData(
     "house",
     0,
@@ -109,50 +99,6 @@ export let buildings: { [key: string]: buildingData } = {
   ),
 };
 
-export function getBuildingData(type: string): buildingData {
-  for (let building of Object.values(buildings)) {
-    if (building.type === type) {
-      return building;
-    }
-  }
-  return {
-    type: "path",
-    price: 0,
-    koeficient: 1,
-    size: { width: blockSize, height: blockSize },
-  };
-}
-
-export let productionAmplifiers = {
-  ["mines"]: 1,
-  ["foundry"]: 1,
-  ["farm"]: 1,
-  ["mason"]: 1,
-};
-
-interface size {
-  width: number;
-  height: number;
-}
-
-export interface position {
-  x: number;
-  y: number;
-}
-
-interface preBuildMark {
-  type: string;
-  size: size;
-  position: position;
-  snap: position;
-  valid: boolean;
-}
-
-export interface data {
-  price: number;
-  size: size;
-}
-
 export const gridWidth = Math.floor(bg.width / 50);
 export const gridHeight = Math.floor(bg.height / 50);
 export const grid: (Building | null)[][] = [];
@@ -161,51 +107,51 @@ for (let y = 0; y < gridHeight; y++) {
   grid[y] = new Array(gridWidth).fill(null);
 }
 export function updatePrices() {
-  buildings["house"]!.price =
+  buildingDefinitions["house"]!.price =
     Math.floor(
       100 *
         Math.pow(
-          buildings["house"]!.koeficient,
+          buildingDefinitions["house"]!.koeficient,
           placedBuildings.filter((b) => b.data.type === "house").length,
         ),
     ) - 100;
-  buildings["foundry"]!.price =
+  buildingDefinitions["foundry"]!.price =
     Math.floor(
       500 *
         Math.pow(
-          buildings["foundry"]!.koeficient,
+          buildingDefinitions["foundry"]!.koeficient,
           placedBuildings.filter((b) => b.data.type === "foundry").length,
         ),
     ) - 500;
-  buildings["shop"]!.price =
+  buildingDefinitions["shop"]!.price =
     Math.floor(
       300 *
         Math.pow(
-          buildings["shop"]!.koeficient,
+          buildingDefinitions["shop"]!.koeficient,
           placedBuildings.filter((b) => b.data.type === "shop").length,
         ),
     ) - 300;
-  buildings["farm"]!.price =
+  buildingDefinitions["farm"]!.price =
     Math.floor(
       400 *
         Math.pow(
-          buildings["farm"]!.koeficient,
+          buildingDefinitions["farm"]!.koeficient,
           placedBuildings.filter((b) => b.data.type === "farm").length,
         ),
     ) - 400;
-  buildings["mines"]!.price =
+  buildingDefinitions["mines"]!.price =
     Math.floor(
       700 *
         Math.pow(
-          buildings["mines"]!.koeficient,
+          buildingDefinitions["mines"]!.koeficient,
           placedBuildings.filter((b) => b.data.type === "mines").length,
         ),
     ) - 700;
-  buildings["mason"]!.price =
+  buildingDefinitions["mason"]!.price =
     Math.floor(
       600 *
         Math.pow(
-          buildings["mason"]!.koeficient,
+          buildingDefinitions["mason"]!.koeficient,
           placedBuildings.filter((b) => b.data.type === "mason").length,
         ),
     ) - 600;
@@ -251,7 +197,7 @@ function renderPreBuild(preBuild: preBuildMark, color: string = "#0000FF") {
   const sw = Math.max(0, preBuild.size.width);
   const sh = Math.max(0, preBuild.size.height);
 
-  priceTag.innerText = `Price: ${getBuildingData(preBuild.type).price} Money`;
+  priceTag.innerText = `Price: ${buildingDefinitions[preBuild.type]?.price} Money`;
 
   if (sy > 0) pbgCtx.clearRect(0, 0, pbg.width, sy);
   const bottomY = sy + sh;
@@ -267,7 +213,11 @@ function renderPreBuild(preBuild: preBuildMark, color: string = "#0000FF") {
 }
 
 export function checkBuildingPosition(type: string): boolean | null {
-  let size: size = getBuildingData(type).size;
+  const size = buildingDefinitions[type]?.size;
+
+  if (!size) {
+    return null;
+  }
 
   preBuild.type = type;
   preBuild.size = size;
@@ -362,7 +312,9 @@ export function checkBuildingPosition(type: string): boolean | null {
 export function placeBuilding(type: string): boolean {
   let status = checkBuildingPosition(type);
   if (status == null) return false;
-  if (!buyBuilding(getBuildingData(type))) return false;
+  const buildingDefinition = buildingDefinitions[type];
+  if (buildingDefinition == null) return false;
+  if (!buyBuilding(buildingDefinition)) return false;
   if (!status) {
     let newBuilding = new Building(type, preBuild.snap, populationData);
     placedBuildings.push(newBuilding);

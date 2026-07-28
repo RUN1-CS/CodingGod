@@ -3,10 +3,11 @@ import { /*resumeGame,*/ frame } from "./game.js";
 import {
   updatePrices,
   placedBuildings,
-  productionAmplifiers,
+  buildingDefinitions,
 } from "./buildings.js";
-import type { data } from "./buildings.js";
 import { Player, Population } from "./classes.js";
+
+import type { data } from "./types.js";
 
 /*----------------------------------------------------------------------------
  *                                                                           *
@@ -271,11 +272,15 @@ productionTerminalButton.addEventListener("click", () => {
     <h3>Production Terminal</h3>
     <label for="MinAmp" id="MinAmpLabel">Set Mines Production Rate (%): </label>
     <input type="range" id="MinAmp" name="productionRate" min="0" max="200" value="${
-      productionAmplifiers["mines"] * 100
+      buildingDefinitions["mines"]?.amplifier
+        ? buildingDefinitions["mines"].amplifier * 100
+        : 100
     }"><br>
     <label for="FouAmp" id="FouAmpLabel">Set Foundries Production Rate (%): </label>
     <input type="range" id="FouAmp" name="productionRate" min="0" max="200" value="${
-      productionAmplifiers["foundry"] * 100
+      buildingDefinitions["foundry"]?.amplifier
+        ? buildingDefinitions["foundry"].amplifier * 100
+        : 100
     }"><br>
     <button id="setProductionRate">Set Rate</button>
     <button id="dumbResources">Dump Resources</button>
@@ -300,9 +305,9 @@ productionTerminalButton.addEventListener("click", () => {
   ) as HTMLButtonElement;
   setButton.addEventListener("click", () => {
     const ParsedMinAmp = parseInt(MinAmp.value);
-    productionAmplifiers["mines"] = ParsedMinAmp / 100;
+    buildingDefinitions["mines"]!.amplifier = ParsedMinAmp / 100;
     const ParsedFacAmp = parseInt(FauAmp.value);
-    productionAmplifiers["foundry"] = ParsedFacAmp / 100;
+    buildingDefinitions["foundry"]!.amplifier = ParsedFacAmp / 100;
     mpopClose(document.querySelector(".modal") as HTMLDivElement);
     //resumeGame();
   });

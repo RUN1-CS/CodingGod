@@ -1,32 +1,31 @@
 import {
-  getBuildingData,
   blockSize,
-  getbuildingImage,
+  BuildingImgs,
   grid,
   gridWidth,
   gridHeight,
+  buildingDefinitions,
 } from "./buildings.js";
-import type { position } from "./buildings.js";
 
 import { optimizeUnits, shopsOpenned } from "./economy.js";
 
 import { bgCtx, frame } from "./game.js";
 
+import type { size, position } from "./types.js";
+
 export class buildingData {
   type: string;
   price: number;
   koeficient: number;
-  size: {
-    width: number;
-    height: number;
-  };
+  size: size;
   produces?: { [key: string]: number } = {};
   requires?: { [key: string]: number } = {};
+  amplifier?: number = 1;
   constructor(
     type: string,
     price: number,
     koeficient: number,
-    size: { width: number; height: number },
+    size: size,
     produces?: { [key: string]: number },
     requires?: { [key: string]: number },
   ) {
@@ -37,6 +36,27 @@ export class buildingData {
     this.produces = produces ?? {};
     this.requires = requires ?? {};
   }
+
+  getbuildingImage(): HTMLImageElement {
+    const rid = this.type.toLocaleLowerCase();
+    for (let buildingImg of BuildingImgs) {
+      if (buildingImg.id === rid) {
+        return buildingImg;
+      } else {
+        continue;
+      }
+    }
+    throw new Error(`Building image with id ${rid} not found`);
+  }
+
+  getBuildingData(): buildingData {
+    for (let building of Object.values(buildingDefinitions) as buildingData[]) {
+      if (building.type === this.type) {
+        return building;
+      }
+    }
+    return this;
+  }
 }
 
 export class Building {
@@ -45,7 +65,9 @@ export class Building {
   householdMembers?: Citizen[] = [];
   maxMembers?: number = 5;
   constructor(type: string, position: position, population: Population) {
-    this.data = getBuildingData(type);
+    this.data =
+      buildingDefinitions[type] ??
+      new buildingData(type, 0, 1, { width: blockSize, height: blockSize });
     this.position = position;
     for (
       let y = this.position.y;
@@ -73,7 +95,7 @@ export class Building {
 
   render() {
     bgCtx.drawImage(
-      getbuildingImage(this.data.type),
+      this.data.getbuildingImage(),
       this.position.x,
       this.position.y,
       this.data.size.width,
