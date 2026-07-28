@@ -12,7 +12,7 @@ if(isset($_POST['theme'])){
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodingGod</title>
+    <title>The Economy Sim</title>
     <link rel="stylesheet" href="/game.css">
 </head>
 <script type="module" src="/Scripts/game.js"></script>

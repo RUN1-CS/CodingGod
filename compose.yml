@@ -1,0 +1,44 @@
+services:
+  app:
+    container_name: the_economy_sim
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    volumes:
+      - ./app:/app
+    networks:
+      - TES_NET
+    ports:
+      - "8080:80"
+
+  server:
+    container_name: the_economy_sim_server
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    volumes:
+      - ./server:/app
+    networks:
+      - TES_NET
+    ports:
+      - "3000:3000"
+
+  db:
+    container_name: the_economy_sim_db
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: tes_user
+      POSTGRES_PASSWORD: tes_passwd
+      POSTGRES_DB: tes_db
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./db-data:/var/lib/postgresql:Z
+    networks:
+      - TES_NET
+
+networks:
+  TES_NET:
+    driver: bridge
