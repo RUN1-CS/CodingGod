@@ -1,4 +1,4 @@
-import { process, mpop, mpopClose, populationData } from "./economy.js";
+import { process, populationData } from "./economy.js";
 import {
   buildingInProgress,
   checkBuildingPosition,
@@ -9,6 +9,8 @@ import {
   removeBuildingAtPosition,
   buildAssignValues,
 } from "./buildings.js";
+import { closeTerminal } from "./terminal.js";
+import type { time } from "./types.js";
 
 /*----------------------------------------------------------------------------
  *                                                                           *
@@ -42,6 +44,7 @@ window.dispatchEvent(new Event("canvas set-up"));
  *                                                                           *
  *---------------------------------------------------------------------------*/
 export let frame = 0;
+export let year = 0;
 //let gameInterval: number;
 let started = false;
 //let paused = false;
@@ -72,28 +75,48 @@ function UpdateGame(timeStamp: number) {
   const delta = timeStamp - LFT;
   if (delta >= frameDuration) {
     LFT = timeStamp - (delta % frameDuration);
-    Render();
     process();
   }
   populationSpan.innerText = `Population: ${populationData.population.length}`;
-  if (frame == 3000)
-    mpop(
-      'Thx for playing Coding God! Please consider supporting me on Pateron <br> <a href="https://patreon.com/RUN1_IT"><img src="https://c5.patreon.com/external/favicon/rebrand/pwa-192.png" alt="Patreon" height="16" width="16">Support Me!</a>',
-    );
+  if (frame == 3000) {
+    // mpop(
+    //   'Thx for playing Coding God! Please consider supporting me on Pateron <br> <a href="https://patreon.com/RUN1_IT"><img src="https://c5.patreon.com/external/favicon/rebrand/pwa-192.png" alt="Patreon" height="16" width="16">Support Me!</a>',
+    // );
+  } else if (frame === 25500) {
+    frame = 0;
+    year++;
+  }
+
+  updateTime(getTime(frame));
   requestAnimationFrame(UpdateGame);
 }
 
-function Render() {}
+// A day is 24 hours or 25 500 frames, so 1 hour is 1250 frames. A minute is 20.8333 frames, and a second is 0.3472 frames.
+export function getTime(frame: number): time {
+  const totalSeconds = Math.floor(frame / 0.3472);
+  const hours = Math.floor(totalSeconds / 3600) % 24;
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return { hours, minutes, seconds };
+}
+
+function updateTime(time: time) {
+  const timeValue = document.getElementById("time-value") as HTMLSpanElement;
+  timeValue.textContent = `${time.hours.toString().padStart(2, "0")}:${time.minutes
+    .toString()
+    .padStart(2, "0")}:${time.seconds.toString().padStart(2, "0")}`;
+}
 
 export function cancelBuilding() {
   pbgCtx.clearRect(0, 0, pbg.width, pbg.height);
   setBuildingState(false);
 }
 
-function construction(type: string) {
+export function construction(type: string) {
   setBuildingState(true);
   placeBuilding(type);
-  mpopClose(modal);
+  closeTerminal();
 }
 
 /*----------------------------------------------------------------------------
@@ -122,10 +145,6 @@ addEventListener("mousemove", function (event) {
 });
 
 addEventListener("keydown", function (event) {
-  if (event.key === "b") {
-    mpop("content", "Cancel", true, "Build Menu");
-    //resumeGame();
-  }
   if (event.key === "c") {
     setBuildingState(false);
     priceTag.innerText = ``;
@@ -148,8 +167,8 @@ addEventListener("keydown", function (event) {
       pbgCtx.clearRect(0, 0, pbg.width, pbg.height);
       priceTag.innerText = ``;
     }
-    //resumeGame();
-    mpopClose(modal);
+    // resumeGame();
+    // mpopClose(modal);
   }
 });
 

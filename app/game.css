@@ -1,173 +1,137 @@
-canvas {
-  position: absolute;
-  top: 60px;
-  left: 0;
-  pointer-events: none;
-}
-
-#bg {
-  z-index: 0;
-  background-color: green;
-}
-#pbg {
-  z-index: 1;
-}
-#fg {
-  z-index: 2;
-}
-.modal {
-  position: relative;
-  top: calc(100vh / 4);
-  z-index: 10;
-  display: none;
-  max-width: fit-content;
-  max-height: fit-content;
-  background-color: #222;
-  border: 2px solid #111;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.modal .mheader {
-  color: #eee;
-  padding: 0.5em;
-  margin: 1em;
-  border-bottom: 1px solid #333;
-}
-
-.modal .mcontent {
-  color: #eee;
-  padding: 0.5em;
-  margin: 1em;
-}
-
-.modal .mfooter {
-  color: #eee;
-  padding: 0.5em;
-  margin: 1em;
-  border-top: 1px solid #333;
-}
-
-button {
-  padding: 0.5em 1em;
-  border: none;
-  border-radius: 4px;
-  background: linear-gradient(135deg, #6a11cb, #2575fc);
-  border: none;
-  cursor: pointer;
-  color: #eee;
-}
-
-button:focus {
-  outline: none;
-  accent-color: linear-gradient(135deg, #8c33ed, #4797fe);
-}
-
-button:hover {
-  opacity: 0.9;
-  transform: scale(1.05);
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  font-family: sans-serif;
-  margin: 0;
-  padding: 0;
-  transition:
-    background-color 0.5s,
-    color 0.5s;
-}
-
-select {
-  margin: 1em;
-  padding: 0.2em;
-}
-
-body.light {
-  background-color: #f0f0f0;
-  color: #222;
-}
-
-body.light select,
-body.light span {
-  background-color: #fff;
-  color: #222;
-  border: 1px solid #ccc;
-}
-
-body.dark {
-  background-color: #222;
-  color: #eee;
-}
-
-body.dark select,
-body.dark span {
-  background-color: #333;
-  color: #eee;
-  border: 1px solid #555;
-}
-
-main {
+  background-color: #121212;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
   align-items: center;
-  font-size: large;
+  height: 100vh;
+  font-family: "Fira Code", "Courier New", monospace;
 }
 
-body.light header {
-  background-color: #eee;
-  color: #222;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 50px;
-  z-index: 2;
-}
+/* Terminal stuff */
 
-body.dark header {
-  background-color: #222;
-  color: #eee;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 50px;
-  z-index: 2;
-}
-
-.popup_window {
+.terminal-container {
   display: none;
-  width: fit-content;
-  background-color: #333;
-  color: #eee;
-  text-align: center;
-  border-radius: 6px;
-  padding: 0.5em 0;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10000;
+  width: 90%;
+  max-width: 800px;
+  height: 420px;
+  background-color: #0c0c0c;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  flex-direction: column;
+  border: 1px solid #2a2a2a;
+}
+
+.terminal-header {
+  background-color: #1f1f1f;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  border-bottom: 1px solid #2d2d2d;
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.close {
+  background-color: #ff5f56;
+}
+.minimize {
+  background-color: #ffbd2e;
+}
+.maximize {
+  background-color: #27c93f;
+}
+
+.title {
   position: absolute;
-  z-index: 20;
-  margin-left: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #888;
+  font-size: 0.8rem;
 }
 
-header span {
-  z-index: 19;
-  cursor: pointer;
+.terminal-body {
+  padding: 16px;
+  color: #00ff66;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  flex-grow: 1;
+  overflow-y: auto;
 }
 
-#rawdet {
-  z-index: 20;
-  left: 7vw;
-  bottom: -180%;
+.system-msg {
+  color: #a0a0a0;
+  margin-bottom: 4px;
 }
 
-#procdet {
-  z-index: 20;
-  left: 11vw;
-  bottom: -180%;
+.highlight {
+  color: #00ff66;
 }
 
-#incomes {
-  z-index: 20;
-  left: 16vw;
-  top: 2vw;
-  bottom: -320%;
+.input-line {
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.prompt {
+  color: #3b82f6;
+  margin-right: 8px;
+  font-weight: bold;
+}
+
+#command-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #00ff66;
+  font-family: inherit;
+  font-size: inherit;
+  flex-grow: 1;
+  caret-color: #00ff66;
+}
+
+canvas {
+  display: block;
+  margin: 0 auto;
+  border: 1px solid #2a2a2a;
+  position: absolute;
+  top: 5vh;
+  left: 0;
+  z-index: 0;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 5vh;
+  width: 100%;
+  padding: 10px;
+  background-color: #1f1f1f;
+  border-bottom: 1px solid #2d2d2d;
+  color: #eee;
 }

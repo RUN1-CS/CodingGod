@@ -20,3 +20,9 @@ export interface data {
   price: number;
   size: size;
 }
+
+export interface time {
+  hours: number;
+  minutes: number;
+  seconds: number;
+}

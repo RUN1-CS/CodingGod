@@ -1,4 +1,4 @@
-import { buyBuilding, mpop, populationData } from "./economy.js";
+import { buyBuilding, populationData } from "./economy.js";
 import { buildingData, Building } from "./classes.js";
 
 import { priceTag } from "./game.js";
@@ -321,7 +321,9 @@ export function placeBuilding(type: string): boolean {
     renderBuildings();
     return true;
   } else {
-    if (!buildingInProgress) mpop("Cannot place building here!");
+    if (!buildingInProgress) {
+      // mpop("Cannot place building here!");
+    }
     return false;
   }
 }

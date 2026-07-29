@@ -1,5 +1,4 @@
 import { player, populationData } from "./economy.js";
-import { mpop } from "./economy.js";
 import { placedBuildings } from "./buildings.js";
 import { loadJSON } from "./game.js";
 
@@ -30,27 +29,27 @@ saveLoadButton.addEventListener("click", () => {
     Save slot 2: ${getSlotData(2)}<br>
     Save slot 3: ${getSlotData(3)}<br>
     `;
-  mpop(saveSlots, "Close", false, "Save/Load Game");
+  // mpop(saveSlots, "Close", false, "Save/Load Game");
   for (let i = 1; i <= 3; i++) {
     const saveBtn = document.getElementById(`saveSlot${i}`);
     if (saveBtn) {
       saveBtn.addEventListener("click", () => {
         saveJSON(i);
-        mpop("Game saved!", "Close", false, "Save Game");
+        // mpop("Game saved!", "Close", false, "Save Game");
       });
     }
     const loadBtn = document.getElementById(`loadSlot${i}`);
     if (loadBtn) {
       loadBtn.addEventListener("click", () => {
         loadJSON(i);
-        mpop("Game loaded!", "Close", false, "Load Game");
+        // mpop("Game loaded!", "Close", false, "Load Game");
       });
     }
     const deleteBtn = document.getElementById(`deleteSlot${i}`);
     if (deleteBtn) {
       deleteBtn.addEventListener("click", () => {
         localStorage.removeItem(`saveSlot${i}`);
-        mpop("Save deleted!", "Close", false, "Delete Save");
+        // mpop("Save deleted!", "Close", false, "Delete Save");
       });
     }
   }

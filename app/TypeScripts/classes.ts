@@ -7,7 +7,7 @@ import {
   buildingDefinitions,
 } from "./buildings.js";
 
-import { optimizeUnits, shopsOpenned } from "./economy.js";
+import { shopsOpenned } from "./economy.js";
 
 import { bgCtx, frame } from "./game.js";
 
@@ -162,10 +162,6 @@ export class Player {
   };
   finances: number = 1000;
 
-  constructor() {
-    console.log(this);
-  }
-
   getSupply(resourceName: string): number {
     return this.resources[resourceName]?.demand ?? 0;
   }
@@ -188,15 +184,23 @@ export class Player {
 
 export class Population {
   taxes: number = 0;
-  morale: number = 100;
   starvation: boolean = false;
   population: Citizen[] = [];
+
+  getMorale(): number {
+    let totalHappiness = 0;
+    this.population.forEach((citizen) => {
+      totalHappiness += citizen.happiness;
+    });
+    return totalHappiness / this.population.length;
+  }
 
   taxCollection() {
     return this.population.length * this.taxes;
   }
 
-  hungerProcess() {
+  update() {
+    // Hunger
     const hungryCitizens = this.population.filter(
       (citizen) => citizen.hunger > 50,
     );
@@ -209,17 +213,39 @@ export class Population {
     } else {
       this.starvation = false;
     }
+
+    // Morale
+    const morale = this.getMorale();
+    const moraleUpdate =
+      this.taxes * ((morale - 99) / 100) - (this.starvation ? 10 : 0);
+    this.population.forEach((citizen) => {
+      citizen.happiness += citizen.age / 10 / Math.round(moraleUpdate);
+      citizen.happiness = Math.max(0, Math.min(100, citizen.happiness));
+    });
   }
 
   agePopulation(buildings: Building[]) {
-    for (const citizen of this.population) {
+    let hunger = 0;
+    this.population.forEach((citizen) => {
       citizen.age += 1;
-      citizen.hunger += 1; // Increase hunger as they age
       citizen.happiness -= 0.5; // Decrease happiness slightly as they age
       if (citizen.age > 80 && Math.random() < citizen.age / 100) {
         citizen.die(this, buildings); // Citizens have a chance to die as they age
       }
-    }
+      hunger += citizen.hunger;
+    });
+    hunger /= this.population.length;
+    const houses = buildings.filter(
+      (building) => building.data.type === "house",
+    );
+    houses.forEach((house) => {
+      this.condicionedBirth(
+        Math.floor(Math.random() * 3), // Random number of births (0-2)
+        this.getMorale(),
+        hunger,
+        house,
+      );
+    });
   }
 
   condicionedBirth(
@@ -230,6 +256,8 @@ export class Population {
   ): void {
     if (
       household.householdMembers!.length >= 2 &&
+      household.householdMembers!.length + births < household.maxMembers! &&
+      births > 0 &&
       happiness >= 70 &&
       hunger >= 70
     ) {
@@ -338,9 +366,7 @@ export class Resource {
     const supply = sell ? player.getSupply(this.name) : 0;
     const maxDemand = (population.population.length ?? 1) * 0.3;
     const logistic = maxDemand / (1 + Math.exp(-this.k * (frame - this.t0)));
-    const decay = Math.exp(
-      -this.d * Math.max(0, optimizeUnits(frame) - optimizeUnits(this.tsat)),
-    );
+    const decay = Math.exp(-this.d * Math.max(0, frame - this.tsat));
     const PreDemand = logistic * decay;
     this.demand = Math.min(PreDemand, maxDemand);
     const aF = 0.05 * (maxDemand / Math.max(1, productionBuildings));
