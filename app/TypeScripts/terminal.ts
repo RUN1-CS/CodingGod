@@ -38,11 +38,11 @@ export function processCommand(
         const buildingType = args[0]!.toLowerCase();
         if (buildingDefinitions[buildingType]) {
           response.textContent = `Building ${buildingType} selected.`;
-          const buildingPlaced = construction(buildingType);
-          if (buildingPlaced === true)
-            response.textContent += ` Building ${buildingType} has been placed.`;
-          else if (buildingPlaced === false)
+          if (player.finances >= buildingDefinitions[buildingType].price) {
+            construction(buildingType);
+          } else {
             response.textContent += ` Insufficient funds (${player.finances} / ${buildingDefinitions[buildingType].price}).`;
+          }
         } else {
           response.textContent = `Building not found: ${buildingType}`;
         }
@@ -137,6 +137,15 @@ export function closeTerminal() {
     "economy-terminal",
   ) as HTMLDivElement;
   terminal.style.display = "none";
+}
+
+export function logToTerminal(message: string) {
+  const output = document.getElementById("output") as HTMLDivElement;
+  const logEntry = document.createElement("p") as HTMLParagraphElement;
+  logEntry.style.color = "#a0a0a0";
+  logEntry.textContent = message;
+  output.appendChild(logEntry);
+  output.scrollTop = output.scrollHeight;
 }
 
 addEventListener("DOMContentLoaded", () => {

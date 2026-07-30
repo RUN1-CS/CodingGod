@@ -1,9 +1,5 @@
 import { process, populationData } from "./economy.js";
-import {
-  buildingInProgress,
-  checkBuildingPosition,
-  preBuild,
-} from "./buildings.js";
+import { checkBuildingPosition, preBuild } from "./buildings.js";
 import type { time } from "./types.js";
 
 /*----------------------------------------------------------------------------
@@ -11,9 +7,9 @@ import type { time } from "./types.js";
  *                        C A N V A S   S E T   U P                          *
  *                                                                           *
  *---------------------------------------------------------------------------*/
-const fg = document.getElementById("fg") as HTMLCanvasElement;
-const pbg = document.getElementById("pbg") as HTMLCanvasElement;
-const bg = document.getElementById("bg") as HTMLCanvasElement;
+export const fg = document.getElementById("fg") as HTMLCanvasElement;
+export const pbg = document.getElementById("pbg") as HTMLCanvasElement;
+export const bg = document.getElementById("bg") as HTMLCanvasElement;
 export const fgCtx = fg.getContext("2d") as CanvasRenderingContext2D;
 export const pbgCtx = pbg.getContext("2d") as CanvasRenderingContext2D;
 export const bgCtx = bg.getContext("2d") as CanvasRenderingContext2D;
@@ -52,7 +48,7 @@ const frameDuration = 1000 / targetFPS;
  *---------------------------------------------------------------------------*/
 
 function UpdateGame(timeStamp: number) {
-  if (buildingInProgress) {
+  if (preBuild.buildingInProgress) {
     checkBuildingPosition(preBuild.type);
   }
   frame++;

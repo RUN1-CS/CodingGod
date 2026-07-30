@@ -1,16 +1,9 @@
 import { buyBuilding, populationData } from "./economy.js";
-import { buildingData, Building } from "./classes.js";
-import { paused } from "./game.js";
+import { paused, fg, pbg, bg, pbgCtx, bgCtx } from "./game.js";
+import { Citizen, Population } from "./classes.js";
 
-import type { preBuildMark, position } from "./types.js";
-import { closeTerminal } from "./terminal.js";
-
-const fg = document.getElementById("fg") as HTMLCanvasElement;
-const pbg = document.getElementById("pbg") as HTMLCanvasElement;
-const bg = document.getElementById("bg") as HTMLCanvasElement;
-
-const pbgCtx = pbg.getContext("2d") as CanvasRenderingContext2D;
-const bgCtx = bg.getContext("2d") as CanvasRenderingContext2D;
+import type { position, size } from "./types.js";
+import { closeTerminal, logToTerminal } from "./terminal.js";
 
 fg.width = screen.width;
 fg.height =
@@ -45,14 +38,17 @@ addEventListener("keydown", function (event) {
   }
 
   if (event.key === " ") {
-    if (buildingInProgress) {
+    if (preBuild.buildingInProgress) {
       cancelBuilding();
-      placeBuilding(preBuild.type);
-      if (preBuild.type == "path") setBuildingState(true);
+      preBuild.placeBuilding();
+      if (preBuild.type == "path") preBuild.buildingInProgress = true;
     }
   }
   if (event.key === "Escape") {
-    if (buildingInProgress) cancelBuilding();
+    if (preBuild.buildingInProgress) {
+      cancelBuilding();
+      logToTerminal("Building placement canceled.");
+    }
   }
 });
 
@@ -65,6 +61,169 @@ addEventListener("mousemove", function (event) {
     ((event.clientY - rect.top) / (rect.bottom - rect.top)) * fg.height;
   mouse = { x: mouseX, y: mouseY };
 });
+
+export class buildingData {
+  type: string;
+  price: number;
+  priceAddition: number = 0;
+  koeficient: number;
+  size: size;
+  produces?: { [key: string]: number } = {};
+  requires?: { [key: string]: number } = {};
+  amplifier?: number = 1;
+  constructor(
+    type: string,
+    price: number,
+    priceAddition: number,
+    koeficient: number,
+    size: size,
+    produces?: { [key: string]: number },
+    requires?: { [key: string]: number },
+  ) {
+    this.type = type;
+    this.price = price;
+    this.priceAddition = priceAddition;
+    this.koeficient = koeficient;
+    this.size = size;
+    this.produces = produces ?? {};
+    this.requires = requires ?? {};
+  }
+
+  getbuildingImage(): HTMLImageElement {
+    const rid = this.type.toLocaleLowerCase();
+    for (let buildingImg of BuildingImgs) {
+      if (buildingImg.id === rid) {
+        return buildingImg;
+      } else {
+        continue;
+      }
+    }
+    throw new Error(`Building image with id ${rid} not found`);
+  }
+
+  getBuildingData(): buildingData {
+    for (let building of Object.values(buildingDefinitions) as buildingData[]) {
+      if (building.type === this.type) {
+        return building;
+      }
+    }
+    return this;
+  }
+}
+
+export class PreBuild {
+  type: string;
+  position: position;
+  size: size;
+  snap: position;
+  valid: boolean = false;
+  buildingInProgress = false;
+  constructor(building: buildingData, position: position) {
+    this.type = building.type;
+    this.position = position;
+    this.size = building.size;
+    this.snap = { x: 0, y: 0 };
+    this.valid = false;
+  }
+
+  renderPreBuild(color: string = "#0000FF") {
+    pbgCtx.save();
+    pbgCtx.globalAlpha = 0.5;
+    pbgCtx.fillStyle = color;
+    pbgCtx.fillRect(
+      this.snap.x,
+      this.snap.y,
+      this.size.width,
+      this.size.height,
+    );
+    const sx = Math.max(0, this.snap.x);
+    const sy = Math.max(0, this.snap.y);
+    const sw = Math.max(0, this.size.width);
+    const sh = Math.max(0, this.size.height);
+
+    priceTag.innerText = `Price: ${buildingDefinitions[this.type]?.price} Money`;
+
+    if (sy > 0) pbgCtx.clearRect(0, 0, pbg.width, sy);
+    const bottomY = sy + sh;
+    if (bottomY < pbg.height)
+      pbgCtx.clearRect(0, bottomY, pbg.width, pbg.height - bottomY);
+    if (sx > 0) pbgCtx.clearRect(0, sy, sx, sh);
+    const rightX = sx + sw;
+    if (rightX < pbg.width)
+      pbgCtx.clearRect(rightX, sy, pbg.width - rightX, sh);
+
+    let clearArea = { x: 0, y: 0, width: 0, height: 0 };
+    pbgCtx.clearRect(
+      clearArea.x,
+      clearArea.y,
+      clearArea.width,
+      clearArea.height,
+    );
+    pbgCtx.restore();
+  }
+
+  placeBuilding(): boolean | null {
+    const status = checkBuildingPosition(this.type);
+    if (status == null) return null;
+    const buildingDefinition = buildingDefinitions[this.type];
+    if (buildingDefinition == null) return false;
+    if (!buyBuilding(buildingDefinition)) return false;
+    if (!status) {
+      let newBuilding = new Building(this.type, preBuild.snap, populationData);
+      placedBuildings.push(newBuilding);
+      renderBuildings();
+      logToTerminal(`Building ${this.type} has been placed.`);
+      return true;
+    } else {
+      return null;
+    }
+  }
+}
+
+export class Building {
+  data: buildingData;
+  position: position;
+  householdMembers?: Citizen[] = [];
+  maxMembers?: number = 5;
+  constructor(type: string, position: position, population: Population) {
+    this.data =
+      buildingDefinitions[type] ??
+      new buildingData(type, 0, 0, 1, { width: blockSize, height: blockSize });
+    this.position = position;
+    for (
+      let y = this.position.y;
+      y < this.position.y + this.data.size.height;
+      y += blockSize
+    ) {
+      for (
+        let x = this.position.x;
+        x < this.position.x + this.data.size.width;
+        x += blockSize
+      ) {
+        const gy = Math.floor(y / blockSize);
+        const gx = Math.floor(x / blockSize);
+        if (gy < 0 || gx < 0 || gy >= gridHeight || gx >= gridWidth) continue;
+        if (!grid[gy]) grid[gy] = new Array(gridWidth).fill(null);
+        grid[gy][gx] = this;
+      }
+    }
+    if (type === "house") {
+      for (let i = 0; i < Math.floor(Math.random() * 5 + 1); i++) {
+        this.householdMembers?.push(population.birth());
+      }
+    }
+  }
+
+  render() {
+    bgCtx.drawImage(
+      this.data.getbuildingImage(),
+      this.position.x,
+      this.position.y,
+      this.data.size.width,
+      this.data.size.height,
+    );
+  }
+}
 
 export const buildingDefinitions: { [key: string]: buildingData } = {
   house: new buildingData(
@@ -147,8 +306,6 @@ export function updatePrices() {
   }
 }
 
-export let buildingInProgress = false;
-
 export let placedBuildings: Building[] = [];
 
 function renderBuildings() {
@@ -164,43 +321,10 @@ function snapToGrid(position: position): position {
   };
 }
 
-export let preBuild: preBuildMark = {
-  type: "house",
-  position: { x: mouse.x, y: mouse.y },
-  size: { width: blockSize, height: blockSize },
-  snap: { x: 0, y: 0 },
-  valid: false,
-};
-
-function renderPreBuild(preBuild: preBuildMark, color: string = "#0000FF") {
-  pbgCtx.save();
-  pbgCtx.globalAlpha = 0.5;
-  pbgCtx.fillStyle = color;
-  pbgCtx.fillRect(
-    preBuild.snap.x,
-    preBuild.snap.y,
-    preBuild.size.width,
-    preBuild.size.height,
-  );
-  const sx = Math.max(0, preBuild.snap.x);
-  const sy = Math.max(0, preBuild.snap.y);
-  const sw = Math.max(0, preBuild.size.width);
-  const sh = Math.max(0, preBuild.size.height);
-
-  priceTag.innerText = `Price: ${buildingDefinitions[preBuild.type]?.price} Money`;
-
-  if (sy > 0) pbgCtx.clearRect(0, 0, pbg.width, sy);
-  const bottomY = sy + sh;
-  if (bottomY < pbg.height)
-    pbgCtx.clearRect(0, bottomY, pbg.width, pbg.height - bottomY);
-  if (sx > 0) pbgCtx.clearRect(0, sy, sx, sh);
-  const rightX = sx + sw;
-  if (rightX < pbg.width) pbgCtx.clearRect(rightX, sy, pbg.width - rightX, sh);
-
-  let clearArea = { x: 0, y: 0, width: 0, height: 0 };
-  pbgCtx.clearRect(clearArea.x, clearArea.y, clearArea.width, clearArea.height);
-  pbgCtx.restore();
-}
+export let preBuild: PreBuild = new PreBuild(buildingDefinitions["house"]!, {
+  x: 0,
+  y: 0,
+});
 
 export function checkBuildingPosition(type: string): boolean | null {
   const size = buildingDefinitions[type]?.size;
@@ -213,7 +337,7 @@ export function checkBuildingPosition(type: string): boolean | null {
   preBuild.size = size;
   preBuild.snap = snapToGrid({ x: mouse.x, y: mouse.y });
 
-  if (buildingInProgress) {
+  if (preBuild.buildingInProgress) {
     preBuild.position = preBuild.snap;
   } else {
     pbgCtx.clearRect(
@@ -230,8 +354,8 @@ export function checkBuildingPosition(type: string): boolean | null {
     preBuild.snap.x + size.width > bg.width ||
     preBuild.snap.y + size.height > bg.height
   ) {
-    if (buildingInProgress) {
-      renderPreBuild(preBuild, "#FFFF00");
+    if (preBuild.buildingInProgress) {
+      preBuild.renderPreBuild("#FFFF00");
       return null;
     } else {
       return true;
@@ -249,9 +373,9 @@ export function checkBuildingPosition(type: string): boolean | null {
           placedBuilding.position.y + placedBuilding.data.size.height
       )
     ) {
-      if (buildingInProgress) {
+      if (preBuild.buildingInProgress) {
         preBuild.valid = false;
-        renderPreBuild(preBuild, "#FF0000");
+        preBuild.renderPreBuild("#FF0000");
         return null;
       }
       return true;
@@ -271,18 +395,18 @@ export function checkBuildingPosition(type: string): boolean | null {
       const gy = Math.floor(y / blockSize);
       const gx = Math.floor(x / blockSize);
       if (gy < 0 || gx < 0 || gy >= gridHeight || gx >= gridWidth) {
-        if (buildingInProgress) {
+        if (preBuild.buildingInProgress) {
           preBuild.valid = false;
-          renderPreBuild(preBuild, "#FF0000");
+          preBuild.renderPreBuild("#FF0000");
           return null;
         } else {
           return true;
         }
       }
       if (grid[gy]?.[gx] != null) {
-        if (buildingInProgress) {
+        if (preBuild.buildingInProgress) {
           preBuild.valid = false;
-          renderPreBuild(preBuild, "#FF0000");
+          preBuild.renderPreBuild("#FF0000");
           return null;
         } else {
           return true;
@@ -291,28 +415,12 @@ export function checkBuildingPosition(type: string): boolean | null {
     }
   }
 
-  if (buildingInProgress) {
+  if (preBuild.buildingInProgress) {
     preBuild.valid = true;
-    renderPreBuild(preBuild);
+    preBuild.renderPreBuild("#00FF00");
     return null;
   }
   return false;
-}
-
-function placeBuilding(type: string): boolean | null {
-  const status = checkBuildingPosition(type);
-  if (status == null) return null;
-  const buildingDefinition = buildingDefinitions[type];
-  if (buildingDefinition == null) return false;
-  if (!buyBuilding(buildingDefinition)) return false;
-  if (!status) {
-    let newBuilding = new Building(type, preBuild.snap, populationData);
-    placedBuildings.push(newBuilding);
-    renderBuildings();
-    return true;
-  } else {
-    return null;
-  }
 }
 
 function removeBuildingAtPosition(position: position) {
@@ -355,10 +463,6 @@ function removeBuildingAtPosition(position: position) {
   }
 }
 
-function setBuildingState(set: boolean) {
-  buildingInProgress = set;
-}
-
 export function buildAssignValues(pb: any) {
   placedBuildings = pb;
   renderBuildings();
@@ -366,12 +470,12 @@ export function buildAssignValues(pb: any) {
 
 function cancelBuilding() {
   pbgCtx.clearRect(0, 0, pbg.width, pbg.height);
-  setBuildingState(false);
+  preBuild.buildingInProgress = false;
   priceTag.innerText = ``;
 }
 
-export function construction(type: string): boolean | null {
-  setBuildingState(true);
+export function construction(type: string) {
   closeTerminal();
-  return placeBuilding(type);
+  preBuild.buildingInProgress = true;
+  preBuild = new PreBuild(buildingDefinitions[type]!, { x: 0, y: 0 });
 }
