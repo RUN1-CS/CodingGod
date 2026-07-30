@@ -46,15 +46,13 @@ addEventListener("keydown", function (event) {
 
   if (event.key === " ") {
     if (buildingInProgress) {
+      cancelBuilding();
       placeBuilding(preBuild.type);
       if (preBuild.type == "path") setBuildingState(true);
-      cancelBuilding();
     }
   }
   if (event.key === "Escape") {
-    if (buildingInProgress) {
-      cancelBuilding();
-    }
+    if (buildingInProgress) cancelBuilding();
   }
 });
 
@@ -301,9 +299,9 @@ export function checkBuildingPosition(type: string): boolean | null {
   return false;
 }
 
-export function placeBuilding(type: string): boolean {
-  let status = checkBuildingPosition(type);
-  if (status == null) return false;
+function placeBuilding(type: string): boolean | null {
+  const status = checkBuildingPosition(type);
+  if (status == null) return null;
   const buildingDefinition = buildingDefinitions[type];
   if (buildingDefinition == null) return false;
   if (!buyBuilding(buildingDefinition)) return false;
@@ -313,14 +311,11 @@ export function placeBuilding(type: string): boolean {
     renderBuildings();
     return true;
   } else {
-    if (!buildingInProgress) {
-      // mpop("Cannot place building here!");
-    }
-    return false;
+    return null;
   }
 }
 
-export function removeBuildingAtPosition(position: position) {
+function removeBuildingAtPosition(position: position) {
   const snappedPos = snapToGrid(position);
   const gridX = Math.floor(snappedPos.x / blockSize);
   const gridY = Math.floor(snappedPos.y / blockSize);
@@ -360,7 +355,7 @@ export function removeBuildingAtPosition(position: position) {
   }
 }
 
-export function setBuildingState(set: boolean) {
+function setBuildingState(set: boolean) {
   buildingInProgress = set;
 }
 
@@ -369,14 +364,14 @@ export function buildAssignValues(pb: any) {
   renderBuildings();
 }
 
-export function cancelBuilding() {
+function cancelBuilding() {
   pbgCtx.clearRect(0, 0, pbg.width, pbg.height);
   setBuildingState(false);
   priceTag.innerText = ``;
 }
 
-export function construction(type: string) {
+export function construction(type: string): boolean | null {
   setBuildingState(true);
-  placeBuilding(type);
   closeTerminal();
+  return placeBuilding(type);
 }

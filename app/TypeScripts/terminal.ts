@@ -1,4 +1,8 @@
-import { buildingDefinitions, construction } from "./buildings.js";
+import {
+  buildingDefinitions,
+  construction,
+  placedBuildings,
+} from "./buildings.js";
 import { player, populationData } from "./economy.js";
 import { saveJSON, loadJSON } from "./saveLoad.js";
 
@@ -27,13 +31,18 @@ export function processCommand(
       return;
     case "build":
       if (args.length === 0) {
-        response.textContent = "Please specify a building to build.";
+        for (const building in placedBuildings) {
+          response.textContent += `${building}\n`;
+        }
       } else {
         const buildingType = args[0]!.toLowerCase();
         if (buildingDefinitions[buildingType]) {
           response.textContent = `Building ${buildingType} selected.`;
-          construction(buildingType);
-          response.textContent += ` Building ${buildingType} has been placed.`;
+          const buildingPlaced = construction(buildingType);
+          if (buildingPlaced === true)
+            response.textContent += ` Building ${buildingType} has been placed.`;
+          else if (buildingPlaced === false)
+            response.textContent += ` Insufficient funds (${player.finances} / ${buildingDefinitions[buildingType].price}).`;
         } else {
           response.textContent = `Building not found: ${buildingType}`;
         }
