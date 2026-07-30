@@ -4,6 +4,12 @@ import { frame } from "./game.js";
 
 import { Building } from "./buildings.js";
 
+/*----------------------------------------------------------------------------
+ *                                                                           *
+ *                        P O P U L A T I O N                                *
+ *                                                                           *
+ *---------------------------------------------------------------------------*/
+
 export class Citizen {
   happiness: number;
   hunger: number;
@@ -27,58 +33,6 @@ export class Citizen {
         }
       }
     });
-  }
-}
-
-export class Player {
-  resources: Record<string, Resource> = {
-    coal: new Resource("coal", 14, 0.2, 5, 0, 0.2, 100, 5000, "raw"),
-    iron: new Resource("iron", 13, 0.15, 4, 0, 0.4, 200, 10000, "raw"),
-    stone: new Resource("stone", 7, 0.03, 1, 0, 0.1, 50, 2500, "raw"),
-    refinedCoal: new Resource(
-      "refinedCoal",
-      27,
-      0.2,
-      18,
-      0,
-      0.1,
-      100,
-      5000,
-      "processed",
-    ),
-    steel: new Resource("steel", 55, 0.15, 46, 0, 0.8, 200, 10000, "processed"),
-    stoneBricks: new Resource(
-      "stoneBricks",
-      13,
-      0.1,
-      4,
-      0,
-      0.1,
-      50,
-      2500,
-      "processed",
-    ),
-    food: new Resource("food", 5, 0.05, 1, 0, 0.1, 50, 2500),
-  };
-  finances: number = 1000;
-
-  getSupply(resourceName: string): number {
-    return this.resources[resourceName]?.demand ?? 0;
-  }
-
-  sell(buildings: Building[]) {
-    const shops = buildings.filter((building) => building.data.type === "shop");
-
-    if (shopsOpenned) {
-      if (this.resources["stoneBricks"]!.ammount > 10 && shops.length > 0) {
-        this.finances += shops.length * 10;
-        this.resources["stoneBricks"]!.ammount -= shops.length * 10;
-      }
-      if (this.resources["steel"]!.ammount > 5 && shops.length > 0) {
-        this.finances += shops.length * 20;
-        this.resources["steel"]!.ammount -= shops.length * 5;
-      }
-    }
   }
 }
 
@@ -173,6 +127,64 @@ export class Population {
     const newCitizen = new Citizen(100, 100);
     this.population.push(newCitizen);
     return newCitizen;
+  }
+}
+
+/*----------------------------------------------------------------------------
+ *                                                                           *
+ *                           O T H E R S                                     *
+ *                                                                           *
+ *---------------------------------------------------------------------------*/
+
+export class Player {
+  resources: Record<string, Resource> = {
+    coal: new Resource("coal", 14, 0.2, 5, 0, 0.2, 100, 5000, "raw"),
+    iron: new Resource("iron", 13, 0.15, 4, 0, 0.4, 200, 10000, "raw"),
+    stone: new Resource("stone", 7, 0.03, 1, 0, 0.1, 50, 2500, "raw"),
+    refinedCoal: new Resource(
+      "refinedCoal",
+      27,
+      0.2,
+      18,
+      0,
+      0.1,
+      100,
+      5000,
+      "processed",
+    ),
+    steel: new Resource("steel", 55, 0.15, 46, 0, 0.8, 200, 10000, "processed"),
+    stoneBricks: new Resource(
+      "stoneBricks",
+      13,
+      0.1,
+      4,
+      0,
+      0.1,
+      50,
+      2500,
+      "processed",
+    ),
+    food: new Resource("food", 5, 0.05, 1, 0, 0.1, 50, 2500),
+  };
+  finances: number = 1000;
+
+  getSupply(resourceName: string): number {
+    return this.resources[resourceName]?.demand ?? 0;
+  }
+
+  sell(buildings: Building[]) {
+    const shops = buildings.filter((building) => building.data.type === "shop");
+
+    if (shopsOpenned) {
+      if (this.resources["stoneBricks"]!.ammount > 10 && shops.length > 0) {
+        this.finances += shops.length * 10;
+        this.resources["stoneBricks"]!.ammount -= shops.length * 10;
+      }
+      if (this.resources["steel"]!.ammount > 5 && shops.length > 0) {
+        this.finances += shops.length * 20;
+        this.resources["steel"]!.ammount -= shops.length * 5;
+      }
+    }
   }
 }
 

@@ -6,6 +6,44 @@ import {
 import { player, populationData } from "./economy.js";
 import { saveJSON, loadJSON } from "./saveLoad.js";
 
+addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("command-input") as HTMLInputElement;
+  const output = document.getElementById("output") as HTMLDivElement;
+
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      const fullInput = input.value.trim();
+      const parts = fullInput.split(" ");
+      const command = parts[0]!.toLowerCase();
+      const args = parts.slice(1);
+
+      const commandLine = document.createElement("p") as HTMLParagraphElement;
+      commandLine.innerHTML = `<span style="color:#3b82f6;">master@economy:~$</span> ${fullInput}`;
+      output.appendChild(commandLine);
+
+      processCommand(command.toLowerCase(), args, output);
+
+      input.value = "";
+      output.scrollTop = output.scrollHeight;
+    }
+  });
+
+  const openButton = document.getElementById("eco-term") as HTMLButtonElement;
+  const terminal = document.getElementById(
+    "economy-terminal",
+  ) as HTMLDivElement;
+  openButton.addEventListener("click", () => {
+    terminal.style.display = "flex";
+  });
+
+  const closeButton = document.getElementById(
+    "close-terminal",
+  ) as HTMLSpanElement;
+  closeButton.addEventListener("click", () => {
+    closeTerminal();
+  });
+});
+
 export function processCommand(
   cmd: string,
   args: string[],
@@ -147,41 +185,3 @@ export function logToTerminal(message: string) {
   output.appendChild(logEntry);
   output.scrollTop = output.scrollHeight;
 }
-
-addEventListener("DOMContentLoaded", () => {
-  const input = document.getElementById("command-input") as HTMLInputElement;
-  const output = document.getElementById("output") as HTMLDivElement;
-
-  input.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      const fullInput = input.value.trim();
-      const parts = fullInput.split(" ");
-      const command = parts[0]!.toLowerCase();
-      const args = parts.slice(1);
-
-      const commandLine = document.createElement("p") as HTMLParagraphElement;
-      commandLine.innerHTML = `<span style="color:#3b82f6;">master@economy:~$</span> ${fullInput}`;
-      output.appendChild(commandLine);
-
-      processCommand(command.toLowerCase(), args, output);
-
-      input.value = "";
-      output.scrollTop = output.scrollHeight;
-    }
-  });
-
-  const openButton = document.getElementById("eco-term") as HTMLButtonElement;
-  const terminal = document.getElementById(
-    "economy-terminal",
-  ) as HTMLDivElement;
-  openButton.addEventListener("click", () => {
-    terminal.style.display = "flex";
-  });
-
-  const closeButton = document.getElementById(
-    "close-terminal",
-  ) as HTMLSpanElement;
-  closeButton.addEventListener("click", () => {
-    closeTerminal();
-  });
-});

@@ -28,6 +28,12 @@ for (let buildingImg of BuildingImgs) {
 
 export const priceTag = document.getElementById("priceTag") as HTMLDivElement;
 
+/*----------------------------------------------------------------------------
+ *                                                                           *
+ *                              E V E N T S                                  *
+ *                                                                           *
+ *---------------------------------------------------------------------------*/
+
 let mouse = { x: 0, y: 0 };
 
 addEventListener("keydown", function (event) {
@@ -61,6 +67,12 @@ addEventListener("mousemove", function (event) {
     ((event.clientY - rect.top) / (rect.bottom - rect.top)) * fg.height;
   mouse = { x: mouseX, y: mouseY };
 });
+
+/*----------------------------------------------------------------------------
+ *                                                                           *
+ *                              C L A S S E S                                *
+ *                                                                           *
+ *---------------------------------------------------------------------------*/
 
 export class buildingData {
   type: string;
@@ -225,6 +237,12 @@ export class Building {
   }
 }
 
+/*----------------------------------------------------------------------------
+ *                                                                           *
+ *                        D E F I N I T I O N S                              *
+ *                                                                           *
+ *---------------------------------------------------------------------------*/
+
 export const buildingDefinitions: { [key: string]: buildingData } = {
   house: new buildingData(
     "house",
@@ -293,38 +311,18 @@ for (let y = 0; y < gridHeight; y++) {
   grid[y] = new Array(gridWidth).fill(null);
 }
 
-export function updatePrices() {
-  for (let buildingType in buildingDefinitions) {
-    buildingDefinitions[buildingType]!.price =
-      Math.floor(
-        buildingDefinitions[buildingType]!.priceAddition *
-          Math.pow(
-            buildingDefinitions[buildingType]!.koeficient,
-            placedBuildings.filter((b) => b.data.type === buildingType).length,
-          ),
-      ) - buildingDefinitions[buildingType]!.priceAddition;
-  }
-}
-
 export let placedBuildings: Building[] = [];
-
-function renderBuildings() {
-  for (let building of placedBuildings) {
-    building.render();
-  }
-}
-
-function snapToGrid(position: position): position {
-  return {
-    x: Math.floor(position.x / blockSize) * blockSize,
-    y: Math.floor(position.y / blockSize) * blockSize,
-  };
-}
 
 export let preBuild: PreBuild = new PreBuild(buildingDefinitions["house"]!, {
   x: 0,
   y: 0,
 });
+
+/*----------------------------------------------------------------------------
+ *                                                                           *
+ *                        F U N C T I O N S                                  *
+ *                                                                           *
+ *---------------------------------------------------------------------------*/
 
 export function checkBuildingPosition(type: string): boolean | null {
   const size = buildingDefinitions[type]?.size;
@@ -463,9 +461,24 @@ function removeBuildingAtPosition(position: position) {
   }
 }
 
-export function buildAssignValues(pb: any) {
-  placedBuildings = pb;
-  renderBuildings();
+export function updatePrices() {
+  for (let buildingType in buildingDefinitions) {
+    buildingDefinitions[buildingType]!.price =
+      Math.floor(
+        buildingDefinitions[buildingType]!.priceAddition *
+          Math.pow(
+            buildingDefinitions[buildingType]!.koeficient,
+            placedBuildings.filter((b) => b.data.type === buildingType).length,
+          ),
+      ) - buildingDefinitions[buildingType]!.priceAddition;
+  }
+}
+
+function snapToGrid(position: position): position {
+  return {
+    x: Math.floor(position.x / blockSize) * blockSize,
+    y: Math.floor(position.y / blockSize) * blockSize,
+  };
 }
 
 function cancelBuilding() {
@@ -478,4 +491,15 @@ export function construction(type: string) {
   closeTerminal();
   preBuild.buildingInProgress = true;
   preBuild = new PreBuild(buildingDefinitions[type]!, { x: 0, y: 0 });
+}
+
+function renderBuildings() {
+  for (let building of placedBuildings) {
+    building.render();
+  }
+}
+
+export function buildAssignValues(pb: any) {
+  placedBuildings = pb;
+  renderBuildings();
 }
