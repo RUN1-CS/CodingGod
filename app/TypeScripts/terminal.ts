@@ -69,8 +69,33 @@ export function processCommand(
       return;
     case "build":
       if (args.length === 0) {
-        for (const building in placedBuildings) {
-          response.textContent += `${building}\n`;
+        for (const type in buildingDefinitions) {
+          response.textContent += `${type}\n`;
+        }
+      } else if (args[0] === "list") {
+        if (args.length === 1) {
+          Object.values(buildingDefinitions).forEach((building) => {
+            const buildingsOfType = placedBuildings.filter(
+              (b) => b.data.type === building.type,
+            );
+            let ids = buildingsOfType
+              .map((b) => placedBuildings.indexOf(b))
+              .join(", ");
+            if (buildingsOfType.length > 0) {
+              response.textContent += `${building.type}: ${buildingsOfType.length} [${ids}]\n`;
+            }
+          });
+        } else {
+          const buildingType = args[1]!.toLowerCase();
+          if (buildingDefinitions[buildingType]) {
+            const buildingsOfType = placedBuildings.filter(
+              (b) => b.data.type === buildingType,
+            );
+            for (const building of buildingsOfType) {
+              const id = placedBuildings.indexOf(building);
+              response.textContent += `ID: ${id}, Type: ${building.data.type}, Position: (${building.position.x}, ${building.position.y})\n`;
+            }
+          }
         }
       } else {
         const buildingType = args[0]!.toLowerCase();

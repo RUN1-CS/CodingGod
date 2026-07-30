@@ -179,7 +179,7 @@ export class PreBuild {
     if (status == null) return null;
     const buildingDefinition = buildingDefinitions[this.type];
     if (buildingDefinition == null) return false;
-    if (!buyBuilding(buildingDefinition)) return false;
+    if (!buyBuilding(this.type)) return false;
     if (!status) {
       let newBuilding = new Building(this.type, preBuild.snap, populationData);
       placedBuildings.push(newBuilding);
@@ -489,8 +489,8 @@ function cancelBuilding() {
 
 export function construction(type: string) {
   closeTerminal();
-  preBuild.buildingInProgress = true;
   preBuild = new PreBuild(buildingDefinitions[type]!, { x: 0, y: 0 });
+  preBuild.buildingInProgress = true;
 }
 
 function renderBuildings() {

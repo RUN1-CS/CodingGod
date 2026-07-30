@@ -1,9 +1,11 @@
 import { /*resumeGame,*/ frame } from "./game.js";
 
-import { updatePrices, placedBuildings } from "./buildings.js";
+import {
+  updatePrices,
+  placedBuildings,
+  buildingDefinitions,
+} from "./buildings.js";
 import { Player, Population } from "./classes.js";
-
-import type { data } from "./types.js";
 
 /*----------------------------------------------------------------------------
  *                                                                           *
@@ -53,9 +55,10 @@ export function process() {
   updatePrices();
 }
 
-export function buyBuilding(data: data): boolean {
-  if (player.finances >= data.price) {
-    player.finances -= data.price;
+export function buyBuilding(type: string): boolean {
+  const data = buildingDefinitions[type];
+  if (player.finances >= data!.price) {
+    player.finances -= data!.price;
     updateStatsDisplay();
     return true;
   } else {
