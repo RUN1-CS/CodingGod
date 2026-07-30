@@ -2,6 +2,7 @@ import {
   buildingDefinitions,
   construction,
   placedBuildings,
+  Building,
 } from "./buildings.js";
 import { player, populationData } from "./economy.js";
 import { saveJSON, loadJSON } from "./saveLoad.js";
@@ -85,15 +86,52 @@ export function processCommand(
               response.textContent += `${building.type}: ${buildingsOfType.length} [${ids}]\n`;
             }
           });
-        } else {
-          const buildingType = args[1]!.toLowerCase();
-          if (buildingDefinitions[buildingType]) {
-            const buildingsOfType = placedBuildings.filter(
-              (b) => b.data.type === buildingType,
-            );
-            for (const building of buildingsOfType) {
-              const id = placedBuildings.indexOf(building);
-              response.textContent += `ID: ${id}, Type: ${building.data.type}, Position: (${building.position.x}, ${building.position.y})\n`;
+        } else if (args.length === 2) {
+          if (!isNaN(parseInt(args[1]!))) {
+            const building: Building | undefined =
+              placedBuildings[parseInt(args[1]!)];
+            if (building) {
+              let responseText = `Building ID: ${args[1]}, Type: ${building.data.type}, Position: (${building.position.x}, ${building.position.y})`;
+              if (
+                building.householdMembers &&
+                building.householdMembers.length > 0
+              ) {
+                responseText += `\nHousehold Members: ${building.householdMembers.length}`;
+              }
+              if (
+                building.data.produces &&
+                Object.keys(building.data.produces).length > 0
+              ) {
+                responseText += `\nProduces: ${Object.entries(
+                  building.data.produces,
+                )
+                  .map(([resource, amount]) => `${resource}: ${amount}`)
+                  .join(", ")}`;
+              }
+              if (
+                building.data.requires &&
+                Object.keys(building.data.requires).length > 0
+              ) {
+                responseText += `\nRequires: ${Object.entries(
+                  building.data.requires,
+                )
+                  .map(([resource, amount]) => `${resource}: ${amount}`)
+                  .join(", ")}`;
+              }
+              response.textContent = responseText;
+            } else {
+              response.textContent = `Building not found: ${args[1]}`;
+            }
+          } else {
+            const buildingType = args[1]!.toLowerCase();
+            if (buildingDefinitions[buildingType]) {
+              const buildingsOfType = placedBuildings.filter(
+                (b) => b.data.type === buildingType,
+              );
+              for (const building of buildingsOfType) {
+                const id = placedBuildings.indexOf(building);
+                response.textContent += `ID: ${id}, Type: ${building.data.type}, Position: (${building.position.x}, ${building.position.y})\n`;
+              }
             }
           }
         }
