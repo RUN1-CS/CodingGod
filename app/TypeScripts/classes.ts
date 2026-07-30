@@ -16,6 +16,7 @@ import type { size, position } from "./types.js";
 export class buildingData {
   type: string;
   price: number;
+  priceAddition: number = 0;
   koeficient: number;
   size: size;
   produces?: { [key: string]: number } = {};
@@ -24,6 +25,7 @@ export class buildingData {
   constructor(
     type: string,
     price: number,
+    priceAddition: number,
     koeficient: number,
     size: size,
     produces?: { [key: string]: number },
@@ -31,6 +33,7 @@ export class buildingData {
   ) {
     this.type = type;
     this.price = price;
+    this.priceAddition = priceAddition;
     this.koeficient = koeficient;
     this.size = size;
     this.produces = produces ?? {};
@@ -67,7 +70,7 @@ export class Building {
   constructor(type: string, position: position, population: Population) {
     this.data =
       buildingDefinitions[type] ??
-      new buildingData(type, 0, 1, { width: blockSize, height: blockSize });
+      new buildingData(type, 0, 0, 1, { width: blockSize, height: blockSize });
     this.position = position;
     for (
       let y = this.position.y;

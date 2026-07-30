@@ -1,14 +1,14 @@
 import { buyBuilding, populationData } from "./economy.js";
 import { buildingData, Building } from "./classes.js";
-
-import { priceTag } from "./game.js";
+import { paused } from "./game.js";
 
 import type { preBuildMark, position } from "./types.js";
+import { closeTerminal } from "./terminal.js";
 
 const fg = document.getElementById("fg") as HTMLCanvasElement;
 const pbg = document.getElementById("pbg") as HTMLCanvasElement;
 const bg = document.getElementById("bg") as HTMLCanvasElement;
-const fgCtx = fg.getContext("2d") as CanvasRenderingContext2D;
+
 const pbgCtx = pbg.getContext("2d") as CanvasRenderingContext2D;
 const bgCtx = bg.getContext("2d") as CanvasRenderingContext2D;
 
@@ -33,9 +33,33 @@ for (let buildingImg of BuildingImgs) {
   buildingImg.style.height = `${blockSize}px`;
 }
 
+export const priceTag = document.getElementById("priceTag") as HTMLDivElement;
+
 let mouse = { x: 0, y: 0 };
 
+addEventListener("keydown", function (event) {
+  if (paused) return;
+  if (event.key === "c") {
+    removeBuildingAtPosition(mouse);
+    cancelBuilding();
+  }
+
+  if (event.key === " ") {
+    if (buildingInProgress) {
+      placeBuilding(preBuild.type);
+      if (preBuild.type == "path") setBuildingState(true);
+      cancelBuilding();
+    }
+  }
+  if (event.key === "Escape") {
+    if (buildingInProgress) {
+      cancelBuilding();
+    }
+  }
+});
+
 addEventListener("mousemove", function (event) {
+  if (paused) return;
   const rect = fg.getBoundingClientRect();
   const mouseX =
     ((event.clientX - rect.left) / (rect.right - rect.left)) * fg.width;
@@ -48,6 +72,7 @@ export const buildingDefinitions: { [key: string]: buildingData } = {
   house: new buildingData(
     "house",
     0,
+    100,
     1.5,
     {
       width: 2 * blockSize,
@@ -59,6 +84,7 @@ export const buildingDefinitions: { [key: string]: buildingData } = {
   foundry: new buildingData(
     "foundry",
     0,
+    500,
     3,
     {
       width: 3 * blockSize,
@@ -67,24 +93,26 @@ export const buildingDefinitions: { [key: string]: buildingData } = {
     { steel: 1 },
     { coal: 1, iron: 1 },
   ),
-  shop: new buildingData("shop", 0, 2, {
+  shop: new buildingData("shop", 0, 300, 2, {
     width: 2 * blockSize,
     height: 2 * blockSize,
   }),
   farm: new buildingData(
     "farm",
     0,
+    400,
     2,
     { width: 4 * blockSize, height: 4 * blockSize },
     { food: 10 },
   ),
-  path: new buildingData("path", 0, 1, {
+  path: new buildingData("path", 0, 0, 1, {
     width: 1 * blockSize,
     height: 1 * blockSize,
   }),
   mines: new buildingData(
     "mines",
     0,
+    700,
     3,
     { width: 3 * blockSize, height: 3 * blockSize },
     { coal: 1, iron: 1 },
@@ -92,6 +120,7 @@ export const buildingDefinitions: { [key: string]: buildingData } = {
   mason: new buildingData(
     "mason",
     0,
+    600,
     2,
     { width: 2 * blockSize, height: 2 * blockSize },
     { stoneBricks: 1 },
@@ -106,55 +135,18 @@ export const grid: (Building | null)[][] = [];
 for (let y = 0; y < gridHeight; y++) {
   grid[y] = new Array(gridWidth).fill(null);
 }
+
 export function updatePrices() {
-  buildingDefinitions["house"]!.price =
-    Math.floor(
-      100 *
-        Math.pow(
-          buildingDefinitions["house"]!.koeficient,
-          placedBuildings.filter((b) => b.data.type === "house").length,
-        ),
-    ) - 100;
-  buildingDefinitions["foundry"]!.price =
-    Math.floor(
-      500 *
-        Math.pow(
-          buildingDefinitions["foundry"]!.koeficient,
-          placedBuildings.filter((b) => b.data.type === "foundry").length,
-        ),
-    ) - 500;
-  buildingDefinitions["shop"]!.price =
-    Math.floor(
-      300 *
-        Math.pow(
-          buildingDefinitions["shop"]!.koeficient,
-          placedBuildings.filter((b) => b.data.type === "shop").length,
-        ),
-    ) - 300;
-  buildingDefinitions["farm"]!.price =
-    Math.floor(
-      400 *
-        Math.pow(
-          buildingDefinitions["farm"]!.koeficient,
-          placedBuildings.filter((b) => b.data.type === "farm").length,
-        ),
-    ) - 400;
-  buildingDefinitions["mines"]!.price =
-    Math.floor(
-      700 *
-        Math.pow(
-          buildingDefinitions["mines"]!.koeficient,
-          placedBuildings.filter((b) => b.data.type === "mines").length,
-        ),
-    ) - 700;
-  buildingDefinitions["mason"]!.price =
-    Math.floor(
-      600 *
-        Math.pow(
-          buildingDefinitions["mason"]!.koeficient,
-          placedBuildings.filter((b) => b.data.type === "mason").length,
-        ),
-    ) - 600;
+  for (let buildingType in buildingDefinitions) {
+    buildingDefinitions[buildingType]!.price =
+      Math.floor(
+        buildingDefinitions[buildingType]!.priceAddition *
+          Math.pow(
+            buildingDefinitions[buildingType]!.koeficient,
+            placedBuildings.filter((b) => b.data.type === buildingType).length,
+          ),
+      ) - buildingDefinitions[buildingType]!.priceAddition;
+  }
 }
 
 export let buildingInProgress = false;
@@ -375,4 +367,16 @@ export function setBuildingState(set: boolean) {
 export function buildAssignValues(pb: any) {
   placedBuildings = pb;
   renderBuildings();
+}
+
+export function cancelBuilding() {
+  pbgCtx.clearRect(0, 0, pbg.width, pbg.height);
+  setBuildingState(false);
+  priceTag.innerText = ``;
+}
+
+export function construction(type: string) {
+  setBuildingState(true);
+  placeBuilding(type);
+  closeTerminal();
 }

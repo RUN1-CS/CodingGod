@@ -1,6 +1,6 @@
-import { buildingDefinitions } from "./buildings.js";
+import { buildingDefinitions, construction } from "./buildings.js";
 import { player, populationData } from "./economy.js";
-import { construction } from "./game.js";
+import { saveJSON, loadJSON } from "./saveLoad.js";
 
 export function processCommand(
   cmd: string,
@@ -71,6 +71,44 @@ export function processCommand(
       } else {
         response.textContent =
           "Invalid argument for population command. Use 'morale' or 'starvation'.";
+      }
+      break;
+    case "progress":
+      if (args.length === 0) {
+        const responseText =
+          localStorage.getItem("saveSlot1") +
+          "\n" +
+          localStorage.getItem("saveSlot2") +
+          "\n" +
+          localStorage.getItem("saveSlot3");
+        response.textContent = responseText
+          ? responseText
+          : "No saved progress found.";
+      } else if (args[0] === "save") {
+        const saveSlot = parseInt(args[1]!);
+        if (!isNaN(saveSlot) && saveSlot >= 1 && saveSlot <= 3) {
+          saveJSON(saveSlot);
+          response.textContent = `Game progress saved to slot ${saveSlot}.`;
+        } else {
+          response.textContent =
+            "Invalid save slot. Please specify a slot between 1 and 3.";
+        }
+      } else if (args[0] === "load") {
+        const saveSlot = parseInt(args[1]!);
+        if (!isNaN(saveSlot) && saveSlot >= 1 && saveSlot <= 3) {
+          const loadResult = loadJSON(saveSlot);
+          if (typeof loadResult === "boolean" && loadResult === true) {
+            response.textContent = `Game progress loaded from slot ${saveSlot}.`;
+          } else {
+            response.textContent = loadResult as string;
+          }
+        } else {
+          response.textContent =
+            "Invalid load slot. Please specify a slot between 1 and 3.";
+        }
+      } else {
+        response.textContent =
+          "Invalid argument for progress command. Use 'save' or 'load'.";
       }
       break;
     case "exit":
